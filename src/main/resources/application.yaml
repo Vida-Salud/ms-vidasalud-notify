@@ -1,3 +1,22 @@
+server:
+  port: 8092
+
 spring:
   application:
     name: ms-vidasalud-notify
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:vidasalud}
+    password: ${RABBITMQ_PASS:admin123}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        default-requeue-rejected: false
+
+notify:
+  reintentos:
+    max-intentos: 3
+    intervalo-inicial-ms: 1000
+    multiplicador: 2.0
