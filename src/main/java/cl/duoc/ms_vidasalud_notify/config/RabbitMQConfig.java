@@ -41,6 +41,15 @@ public class RabbitMQConfig {
     public static final int DLQ_TTL_MS = 86_400_000;
     public static final int QUEUE_MAX_LENGTH = 1_000;
 
+    public static String dlqDe(String cola) {
+        return switch (cola) {
+            case EMAIL_QUEUE -> EMAIL_DLQ;
+            case ADMISSION_QUEUE -> ADMISSION_DLQ;
+            case RECORD_QUEUE -> RECORD_DLQ;
+            default -> throw new IllegalArgumentException("Cola sin DLQ configurada: " + cola);
+        };
+    }
+
     @Bean
     public DirectExchange directExchange() {
         return new DirectExchange(DIRECT_EXCHANGE, true, false);

@@ -1,8 +1,10 @@
 package cl.duoc.ms_vidasalud_notify.consumer.support;
 
+import cl.duoc.ms_vidasalud_notify.config.RabbitMQConfig;
 import cl.duoc.ms_vidasalud_notify.config.ReintentosProperties;
 import cl.duoc.ms_vidasalud_notify.dto.MensajeComando;
 import cl.duoc.ms_vidasalud_notify.exception.ErrorPermanenteException;
+import cl.duoc.ms_vidasalud_notify.exception.ErrorTemporalException;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -35,6 +37,8 @@ public class ProcesadorMensajes {
 
     private static final Logger log = LoggerFactory.getLogger(ProcesadorMensajes.class);
     private static final String EVENT_ID_DESCONOCIDO = "desconocido";
+    private static final String LOG_DLQ =
+            "[-> DLX] {}. NACK enviado -> DLX={} -> DLQ={} [cola={}, eventId={}, motivo={}, intentos={}]";
 
     private final JsonMapper jsonMapper;
     private final ReintentosProperties reintentos;
@@ -115,12 +119,15 @@ public class ProcesadorMensajes {
     private void enviarADlq(Channel channel, long deliveryTag, String cola, String eventId,
                             RuntimeException causa, int intentos) throws IOException {
         channel.basicNack(deliveryTag, false, false);
+        String dlx = RabbitMQConfig.DEAD_LETTER_EXCHANGE;
+        String dlq = RabbitMQConfig.dlqDe(cola);
+        String motivo = describir(causa);
         if (causa instanceof ErrorPermanenteException) {
-            log.warn("Mensaje enviado a DLQ por error permanente [cola={}, eventId={}, motivo={}, intentos={}]",
-                    cola, eventId, describir(causa), intentos);
+            log.warn(LOG_DLQ, "Error permanente", dlx, dlq, cola, eventId, motivo, intentos);
+        } else if (causa instanceof ErrorTemporalException) {
+            log.error(LOG_DLQ, "Reintentos agotados", dlx, dlq, cola, eventId, motivo, intentos);
         } else {
-            log.error("Mensaje enviado a DLQ tras agotar reintentos [cola={}, eventId={}, motivo={}, intentos={}]",
-                    cola, eventId, describir(causa), intentos, causa);
+            log.error(LOG_DLQ, "Reintentos agotados", dlx, dlq, cola, eventId, motivo, intentos, causa);
         }
     }
 
