@@ -15,7 +15,32 @@ import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
-
+/**
+ * Procesa los mensajes de las colas de trabajo de notify con una política común de confirmación y errores.
+ * Los consumidores solo le pasan el mensaje, el canal, su cola y la acción de negocio.
+ * <p>
+ * El listener trabaja con <b>ACK manual</b> y <b>prefetch 1</b> ({@code spring.rabbitmq.listener.simple}):
+ * cada consumidor tiene un solo mensaje sin confirmar a la vez y decide explícitamente su destino.
+ * <ol>
+ *   <li><b>Mensaje inválido</b> (JSON roto o vacío, o falta {@code eventId}, {@code type} o {@code data}):
+ *       NACK sin requeue &rarr; el broker lo envía al DLX y queda en la DLQ de la cola. No se reintenta.</li>
+ *   <li><b>Duplicado</b>: si {@link RegistroIdempotencia} ya tiene {@code cola:eventId}, se hace ACK y el
+ *       mensaje se ignora sin ejecutar la acción.</li>
+ *   <li><b>Éxito</b>: la acción termina sin errores &rarr; se marca {@code cola:eventId} como procesado y
+ *       después se hace ACK. Si el ACK falla, el reenvío de RabbitMQ se detecta como duplicado.</li>
+ *   <li><b>{@link ErrorPermanenteException}</b>: NACK sin requeue inmediato &rarr; DLQ, sin reintentar.</li>
+ *   <li><b>{@link ErrorTemporalException}</b> (o cualquier otra excepción inesperada): se reintenta en el mismo
+ *       hilo con backoff exponencial según {@code notify.reintentos} (intervalo inicial, multiplicador y
+ *       máximo de reintentos; por defecto 1 s, 2 s y 4 s). Agotados los reintentos: NACK sin requeue &rarr; DLQ.
+ *       Las excepciones inesperadas se registran con stack trace.</li>
+ *   <li><b>Interrupción del hilo</b> durante la espera entre reintentos (por ejemplo, al apagar la app):
+ *       NACK con requeue &rarr; el mensaje vuelve a su cola, para no mandarlo a la DLQ por una causa
+ *       ajena al mensaje.</li>
+ * </ol>
+ * Las DLQ no se consumen: el envío a la DLQ se registra en el log en el momento del NACK, indicando
+ * la cola de origen, el DLX, la DLQ de destino, el {@code eventId}, el motivo y el número de intentos.
+ * Los mensajes que terminan en la DLQ no se marcan como procesados.
+ */
 @Component
 public class ProcesadorMensajes {
 
@@ -35,6 +60,15 @@ public class ProcesadorMensajes {
         this.registro = registro;
     }
 
+    /**
+     * Procesa un mensaje y lo confirma (ACK) o rechaza (NACK) según la política descrita en la clase.
+     *
+     * @param message mensaje crudo recibido de RabbitMQ (body JSON con el envelope {@link MensajeComando})
+     * @param channel canal del listener, usado para el ACK/NACK manual
+     * @param cola    cola de origen (constante de {@link RabbitMQConfig}); define la DLQ y la clave de idempotencia
+     * @param accion  acción de negocio del servicio que corresponde a la cola
+     * @throws IOException si falla el ACK/NACK sobre el canal
+     */
     public void procesar(Message message, Channel channel, String cola,
                          Consumer<MensajeComando> accion) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();

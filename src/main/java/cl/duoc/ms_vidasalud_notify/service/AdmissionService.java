@@ -1,5 +1,8 @@
 package cl.duoc.ms_vidasalud_notify.service;
 
+import static cl.duoc.ms_vidasalud_notify.config.TiposMensaje.ADMISSION_TICKET;
+import static cl.duoc.ms_vidasalud_notify.config.TiposMensaje.ATENCION_CANCELADA;
+
 import cl.duoc.ms_vidasalud_notify.dto.DatosAtencion;
 import cl.duoc.ms_vidasalud_notify.dto.MensajeComando;
 import cl.duoc.ms_vidasalud_notify.exception.ErrorPermanenteException;
@@ -12,9 +15,6 @@ public class AdmissionService {
 
     private static final Logger log = LoggerFactory.getLogger(AdmissionService.class);
 
-    public static final String TYPE_TICKET = "admission.ticket";
-    public static final String TYPE_ATENCION_CANCELADA = "atencion.cancelada";
-
     private final SimuladorFallas simuladorFallas;
 
     public AdmissionService(SimuladorFallas simuladorFallas) {
@@ -25,9 +25,9 @@ public class AdmissionService {
         DatosAtencion data = mensaje.data();
         simuladorFallas.verificar(data, "Sistema de admisión");
         switch (mensaje.type()) {
-            case TYPE_TICKET -> log.info("Ticket de admisión emitido box {} para {} (atención {}) [eventId={}]",
+            case ADMISSION_TICKET -> log.info("Ticket de admisión emitido box {} para {} (atención {}) [eventId={}]",
                     data.box(), data.paciente(), data.atencionId(), mensaje.eventId());
-            case TYPE_ATENCION_CANCELADA -> liberarCupo(mensaje);
+            case ATENCION_CANCELADA -> liberarCupo(mensaje);
             default -> throw new ErrorPermanenteException("Tipo no soportado en admisión: " + mensaje.type());
         }
     }

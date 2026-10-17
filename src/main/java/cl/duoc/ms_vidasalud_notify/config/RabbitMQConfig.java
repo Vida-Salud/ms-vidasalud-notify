@@ -11,6 +11,48 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Topología RabbitMQ de notify (patrón punto a punto con colas de trabajo, más un fanout para la cancelación).
+ * Todos los nombres están centralizados en las constantes de esta clase.
+ * <table class="striped">
+ *   <caption>Rutas de mensajería</caption>
+ *   <tr><th>Exchange</th><th>Tipo</th><th>Routing key/patrón</th><th>Cola</th><th>Consumidor</th><th>DLQ</th></tr>
+ *   <tr><td>cmd.direct</td><td>direct</td><td>email.send</td><td>q.cmd.email</td>
+ *       <td>EmailConsumer</td><td>q.cmd.email.dlq</td></tr>
+ *   <tr><td>cmd.direct</td><td>direct</td><td>admission.ticket</td><td>q.cmd.admission</td>
+ *       <td>AdmissionConsumer</td><td>q.cmd.admission.dlq</td></tr>
+ *   <tr><td>cmd.direct</td><td>direct</td><td>record.gen</td><td>q.cmd.record</td>
+ *       <td>RecordConsumer</td><td>q.cmd.record.dlq</td></tr>
+ *   <tr><td>cmd.topic</td><td>topic</td><td>email.*</td><td>q.cmd.email</td>
+ *       <td>EmailConsumer</td><td>q.cmd.email.dlq</td></tr>
+ *   <tr><td>cmd.topic</td><td>topic</td><td>admission.#</td><td>q.cmd.admission</td>
+ *       <td>AdmissionConsumer</td><td>q.cmd.admission.dlq</td></tr>
+ *   <tr><td>cmd.topic</td><td>topic</td><td>record.*</td><td>q.cmd.record</td>
+ *       <td>RecordConsumer</td><td>q.cmd.record.dlq</td></tr>
+ *   <tr><td>cmd.fanout</td><td>fanout</td><td>(sin routing key)</td><td>q.cmd.email</td>
+ *       <td>EmailConsumer</td><td>q.cmd.email.dlq</td></tr>
+ *   <tr><td>cmd.fanout</td><td>fanout</td><td>(sin routing key)</td><td>q.cmd.admission</td>
+ *       <td>AdmissionConsumer</td><td>q.cmd.admission.dlq</td></tr>
+ *   <tr><td>cmd.dead.dlx</td><td>direct</td><td>email.dead</td><td>q.cmd.email.dlq</td>
+ *       <td>(sin consumidor)</td><td>-</td></tr>
+ *   <tr><td>cmd.dead.dlx</td><td>direct</td><td>admission.dead</td><td>q.cmd.admission.dlq</td>
+ *       <td>(sin consumidor)</td><td>-</td></tr>
+ *   <tr><td>cmd.dead.dlx</td><td>direct</td><td>record.dead</td><td>q.cmd.record.dlq</td>
+ *       <td>(sin consumidor)</td><td>-</td></tr>
+ * </table>
+ * <p>
+ * <b>Colas principales</b> (durables), con los argumentos:
+ * <ul>
+ *   <li>{@code x-message-ttl} = 30 s ({@link #QUEUE_TTL_MS}): un mensaje que espera más que eso en la cola expira y va al DLX.</li>
+ *   <li>{@code x-max-length} = 1000 ({@link #QUEUE_MAX_LENGTH}): al superarlo, el mensaje más antiguo sale de la cola y va al DLX.</li>
+ *   <li>{@code x-dead-letter-exchange} = {@code cmd.dead.dlx}: destino de los mensajes rechazados con NACK sin
+ *       requeue, expirados o desbordados.</li>
+ *   <li>{@code x-dead-letter-routing-key} = {@code email.dead} / {@code admission.dead} / {@code record.dead}:
+ *       con ella el DLX (direct) entrega cada mensaje solo a la DLQ de su cola de origen.</li>
+ * </ul>
+ * <b>DLQ</b> (durables): {@code x-message-ttl} = 24 h ({@link #DLQ_TTL_MS}) y sin consumidor, para que los mensajes
+ * fallidos se puedan inspeccionar en la consola de RabbitMQ antes de expirar.
+ */
 @Configuration
 public class RabbitMQConfig {
 
@@ -43,6 +85,13 @@ public class RabbitMQConfig {
     public static final int DLQ_TTL_MS = 86_400_000;
     public static final int QUEUE_MAX_LENGTH = 1_000;
 
+    /**
+     * Devuelve la DLQ asociada a una cola principal.
+     *
+     * @param cola cola principal ({@link #EMAIL_QUEUE}, {@link #ADMISSION_QUEUE} o {@link #RECORD_QUEUE})
+     * @return la DLQ correspondiente
+     * @throws IllegalArgumentException si la cola no tiene DLQ configurada
+     */
     public static String dlqDe(String cola) {
         return switch (cola) {
             case EMAIL_QUEUE -> EMAIL_DLQ;

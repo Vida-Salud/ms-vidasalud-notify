@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 
 import cl.duoc.ms_vidasalud_notify.config.EmailProperties;
 import cl.duoc.ms_vidasalud_notify.config.SimulacionProperties;
+import cl.duoc.ms_vidasalud_notify.config.TiposMensaje;
 import cl.duoc.ms_vidasalud_notify.dto.DatosAtencion;
 import cl.duoc.ms_vidasalud_notify.dto.MensajeComando;
 import cl.duoc.ms_vidasalud_notify.exception.ErrorTemporalException;
@@ -37,7 +38,7 @@ class EmailServiceTest {
 
     @Test
     void confirmadaEnviaEmailAlPacienteConAsuntoYTexto() {
-        emailService.enviar(mensaje(EmailService.TYPE_CONFIRMADA, "pablo"));
+        emailService.enviar(mensaje(TiposMensaje.EMAIL_CONFIRMADA, "pablo"));
 
         SimpleMailMessage enviado = capturarEmail();
         assertThat(enviado.getFrom()).isEqualTo("notificaciones@vidasalud.cl");
@@ -48,7 +49,7 @@ class EmailServiceTest {
 
     @Test
     void normalizaNombreConTildesYEspacios() {
-        emailService.enviar(mensaje(EmailService.TYPE_CONFIRMADA, "José Pérez"));
+        emailService.enviar(mensaje(TiposMensaje.EMAIL_CONFIRMADA, "José Pérez"));
 
         assertThat(capturarEmail().getTo()).containsExactly("jose.perez@vidasalud.cl");
     }
@@ -57,7 +58,7 @@ class EmailServiceTest {
     void servidorSmtpCaidoEsErrorTemporal() {
         doThrow(new MailSendException("Connection refused")).when(mailSender).send(any(SimpleMailMessage.class));
 
-        assertThatThrownBy(() -> emailService.enviar(mensaje(EmailService.TYPE_CONFIRMADA, "pablo")))
+        assertThatThrownBy(() -> emailService.enviar(mensaje(TiposMensaje.EMAIL_CONFIRMADA, "pablo")))
                 .isInstanceOf(ErrorTemporalException.class)
                 .hasMessageContaining("Servidor de email no disponible");
     }

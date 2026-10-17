@@ -1,5 +1,11 @@
 package cl.duoc.ms_vidasalud_notify.service;
 
+import static cl.duoc.ms_vidasalud_notify.config.TiposMensaje.ATENCION_CANCELADA;
+import static cl.duoc.ms_vidasalud_notify.config.TiposMensaje.EMAIL_CANCELADA;
+import static cl.duoc.ms_vidasalud_notify.config.TiposMensaje.EMAIL_CIERRE;
+import static cl.duoc.ms_vidasalud_notify.config.TiposMensaje.EMAIL_CONFIRMADA;
+import static cl.duoc.ms_vidasalud_notify.config.TiposMensaje.EMAIL_LLAMADO_BOX;
+
 import cl.duoc.ms_vidasalud_notify.config.EmailProperties;
 import cl.duoc.ms_vidasalud_notify.dto.DatosAtencion;
 import cl.duoc.ms_vidasalud_notify.dto.MensajeComando;
@@ -31,12 +37,6 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
-
-    public static final String TYPE_CONFIRMADA = "email.confirmada";
-    public static final String TYPE_LLAMADO_BOX = "email.llamado-box";
-    public static final String TYPE_CIERRE = "email.cierre";
-    public static final String TYPE_CANCELADA = "email.cancelada";
-    public static final String TYPE_ATENCION_CANCELADA = "atencion.cancelada";
 
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final String BOX_POR_DEFECTO = "recepción";
@@ -81,13 +81,13 @@ public class EmailService {
 
     private static String armarTexto(String type, DatosAtencion data) {
         return switch (type) {
-            case TYPE_CONFIRMADA -> "Tu hora de " + servicio(type, data) + " del " + fecha(type, data)
+            case EMAIL_CONFIRMADA -> "Tu hora de " + servicio(type, data) + " del " + fecha(type, data)
                     + " está CONFIRMADA.";
-            case TYPE_LLAMADO_BOX -> data.box() == null || data.box().isBlank()
+            case EMAIL_LLAMADO_BOX -> data.box() == null || data.box().isBlank()
                     ? "Te esperamos en " + BOX_POR_DEFECTO + "."
                     : "Te esperamos en el box " + data.box() + ".";
-            case TYPE_CIERRE -> "Gracias por tu visita. Tu comprobante de atención ya fue generado.";
-            case TYPE_CANCELADA, TYPE_ATENCION_CANCELADA -> "Tu hora de " + servicio(type, data) + " del " + fecha(type, data)
+            case EMAIL_CIERRE -> "Gracias por tu visita. Tu comprobante de atención ya fue generado.";
+            case EMAIL_CANCELADA, ATENCION_CANCELADA -> "Tu hora de " + servicio(type, data) + " del " + fecha(type, data)
                     + " fue CANCELADA.";
             default -> throw new ErrorPermanenteException("Tipo de email no soportado: " + type);
         };
@@ -95,10 +95,10 @@ public class EmailService {
 
     private static String armarAsunto(String type) {
         return switch (type) {
-            case TYPE_CONFIRMADA -> "VidaSalud: hora confirmada";
-            case TYPE_LLAMADO_BOX -> "VidaSalud: te estamos esperando";
-            case TYPE_CIERRE -> "VidaSalud: comprobante de tu atención";
-            case TYPE_CANCELADA, TYPE_ATENCION_CANCELADA -> "VidaSalud: hora cancelada";
+            case EMAIL_CONFIRMADA -> "VidaSalud: hora confirmada";
+            case EMAIL_LLAMADO_BOX -> "VidaSalud: te estamos esperando";
+            case EMAIL_CIERRE -> "VidaSalud: comprobante de tu atención";
+            case EMAIL_CANCELADA, ATENCION_CANCELADA -> "VidaSalud: hora cancelada";
             default -> throw new ErrorPermanenteException("Tipo de email no soportado: " + type);
         };
     }
