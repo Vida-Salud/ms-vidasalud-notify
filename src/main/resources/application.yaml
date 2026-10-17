@@ -20,3 +20,7 @@ notify:
     max-intentos: 3
     intervalo-inicial-ms: 1000
     multiplicador: 2.0
+  idempotencia:
+    max-registros: 10000
+  simulacion:
+    habilitada: ${NOTIFY_SIMULACION:true}

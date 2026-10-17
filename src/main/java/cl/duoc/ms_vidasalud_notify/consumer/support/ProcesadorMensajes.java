@@ -15,23 +15,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
-/**
- * Procesa los mensajes de las colas de trabajo con ACK manual y aplica una política de errores común.
- * <ul>
- *   <li><b>Error permanente</b> ({@link ErrorPermanenteException}): JSON inválido, faltan {@code eventId},
- *       {@code type} o {@code data}, o el servicio lo declara no recuperable. No se reintenta.</li>
- *   <li><b>Error temporal</b> ({@code ErrorTemporalException} o cualquier otra excepción inesperada):
- *       se reintenta hasta {@code notify.reintentos.max-intentos} veces con backoff exponencial
- *       (por defecto 1 s, 2 s y 4 s; hasta 4 ejecuciones en total).</li>
- *   <li><b>ACK</b> ({@code basicAck}): cuando la acción de negocio termina sin errores.</li>
- *   <li><b>NACK sin requeue</b> ({@code basicNack(tag, false, false)}): ante un error permanente o al agotar
- *       los reintentos; el broker lo envía al DLX y queda en la DLQ (TTL 24 h). El log se escribe en ese momento,
- *       ya que las DLQ no se consumen.</li>
- *   <li><b>NACK con requeue</b> ({@code basicNack(tag, false, true)}): si el hilo se interrumpe durante la espera
- *       (por ejemplo, al apagar la aplicación), el mensaje vuelve a la cola para que se procese después
- *       y no termine en la DLQ por una causa ajena al mensaje.</li>
- * </ul>
- */
+
 @Component
 public class ProcesadorMensajes {
 
@@ -42,10 +26,13 @@ public class ProcesadorMensajes {
 
     private final JsonMapper jsonMapper;
     private final ReintentosProperties reintentos;
+    private final RegistroIdempotencia registro;
 
-    public ProcesadorMensajes(JsonMapper jsonMapper, ReintentosProperties reintentos) {
+    public ProcesadorMensajes(JsonMapper jsonMapper, ReintentosProperties reintentos,
+                              RegistroIdempotencia registro) {
         this.jsonMapper = jsonMapper;
         this.reintentos = reintentos;
+        this.registro = registro;
     }
 
     public void procesar(Message message, Channel channel, String cola,
@@ -62,11 +49,18 @@ public class ProcesadorMensajes {
             return;
         }
 
+        if (registro.yaProcesado(cola, mensaje.eventId())) {
+            channel.basicAck(deliveryTag, false);
+            log.info("Duplicado ignorado [cola={}, eventId={}]", cola, mensaje.eventId());
+            return;
+        }
+
         int intento = 1;
         long espera = reintentos.intervaloInicialMs();
         while (true) {
             try {
                 accion.accept(mensaje);
+                registro.marcarProcesado(cola, mensaje.eventId());
                 channel.basicAck(deliveryTag, false);
                 log.info("Mensaje procesado OK [cola={}, eventId={}, type={}, intentos={}]",
                         cola, mensaje.eventId(), mensaje.type(), intento);
