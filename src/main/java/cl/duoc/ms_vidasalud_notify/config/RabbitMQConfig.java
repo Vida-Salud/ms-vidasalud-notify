@@ -3,6 +3,7 @@ package cl.duoc.ms_vidasalud_notify.config;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
@@ -15,6 +16,7 @@ public class RabbitMQConfig {
 
     public static final String DIRECT_EXCHANGE = "cmd.direct";
     public static final String TOPIC_EXCHANGE = "cmd.topic";
+    public static final String FANOUT_EXCHANGE = "cmd.fanout";
     public static final String DEAD_LETTER_EXCHANGE = "cmd.dead.dlx";
 
     public static final String EMAIL_QUEUE = "q.cmd.email";
@@ -58,6 +60,16 @@ public class RabbitMQConfig {
     @Bean
     public TopicExchange topicExchange() {
         return new TopicExchange(TOPIC_EXCHANGE, true, false);
+    }
+
+    /**
+     * Exchange fanout (publish-subscribe): copia cada mensaje a TODAS las colas enlazadas, sin usar routing key.
+     * Se usa para eventos que interesan a varios consumidores, como la cancelación de una atención
+     * (avisar al paciente por email y liberar el box en admisión).
+     */
+    @Bean
+    public FanoutExchange fanoutExchange() {
+        return new FanoutExchange(FANOUT_EXCHANGE, true, false);
     }
 
     @Bean
@@ -144,6 +156,18 @@ public class RabbitMQConfig {
     public Binding recordTopicBinding(@Qualifier("recordQueue") Queue queue,
                                       @Qualifier("topicExchange") TopicExchange exchange) {
         return BindingBuilder.bind(queue).to(exchange).with(RECORD_TOPIC_PATTERN);
+    }
+
+    @Bean
+    public Binding emailFanoutBinding(@Qualifier("emailQueue") Queue queue,
+                                      @Qualifier("fanoutExchange") FanoutExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange);
+    }
+
+    @Bean
+    public Binding admissionFanoutBinding(@Qualifier("admissionQueue") Queue queue,
+                                          @Qualifier("fanoutExchange") FanoutExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange);
     }
 
     @Bean

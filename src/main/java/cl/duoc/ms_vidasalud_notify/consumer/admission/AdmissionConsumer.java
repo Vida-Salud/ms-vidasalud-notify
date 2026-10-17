@@ -9,7 +9,10 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-/** Escucha {@link RabbitMQConfig#ADMISSION_QUEUE} (q.cmd.admission) y ejecuta {@link AdmissionService#emitirTicket}. */
+/**
+ * Escucha {@link RabbitMQConfig#ADMISSION_QUEUE} (q.cmd.admission) y ejecuta {@link AdmissionService#procesar}:
+ * emite el ticket de admisión o libera el cupo del box si la atención se cancela.
+ */
 @Component
 public class AdmissionConsumer {
 
@@ -23,6 +26,6 @@ public class AdmissionConsumer {
 
     @RabbitListener(queues = RabbitMQConfig.ADMISSION_QUEUE)
     public void recibir(Message message, Channel channel) throws IOException {
-        procesador.procesar(message, channel, RabbitMQConfig.ADMISSION_QUEUE, admissionService::emitirTicket);
+        procesador.procesar(message, channel, RabbitMQConfig.ADMISSION_QUEUE, admissionService::procesar);
     }
 }

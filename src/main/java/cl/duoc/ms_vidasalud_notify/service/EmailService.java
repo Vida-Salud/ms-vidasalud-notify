@@ -17,6 +17,7 @@ public class EmailService {
     public static final String TYPE_LLAMADO_BOX = "email.llamado-box";
     public static final String TYPE_CIERRE = "email.cierre";
     public static final String TYPE_CANCELADA = "email.cancelada";
+    public static final String TYPE_ATENCION_CANCELADA = "atencion.cancelada";
 
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final String BOX_POR_DEFECTO = "recepción";
@@ -43,7 +44,7 @@ public class EmailService {
                     ? "Te esperamos en " + BOX_POR_DEFECTO + "."
                     : "Te esperamos en el box " + data.box() + ".";
             case TYPE_CIERRE -> "Gracias por tu visita. Adjuntamos el comprobante de tu atención.";
-            case TYPE_CANCELADA -> "Tu hora de " + servicio(type, data) + " del " + fecha(type, data)
+            case TYPE_CANCELADA, TYPE_ATENCION_CANCELADA -> "Tu hora de " + servicio(type, data) + " del " + fecha(type, data)
                     + " fue CANCELADA.";
             default -> throw new ErrorPermanenteException("Tipo de email no soportado: " + type);
         };
