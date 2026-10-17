@@ -5,8 +5,9 @@ spring:
   application:
     name: ms-vidasalud-notify
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    # Nodos del clúster RabbitMQ (host:puerto separados por coma). Si un nodo cae,
+    # el cliente se reconecta al siguiente de la lista.
+    addresses: ${RABBITMQ_ADDRESSES:localhost:5672,localhost:5673}
     username: ${RABBITMQ_USER:vidasalud}
     password: ${RABBITMQ_PASS:admin123}
     listener:
