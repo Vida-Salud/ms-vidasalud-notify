@@ -15,6 +15,14 @@ spring:
         acknowledge-mode: manual
         prefetch: 1
         default-requeue-rejected: false
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      # Si el servidor SMTP no responde, falla en 3 s y no bloquea el consumidor.
+      mail.smtp.connectiontimeout: 3000
+      mail.smtp.timeout: 3000
+      mail.smtp.writetimeout: 3000
 
 notify:
   reintentos:
@@ -25,3 +33,6 @@ notify:
     max-registros: 10000
   simulacion:
     habilitada: ${NOTIFY_SIMULACION:true}
+  email:
+    remitente: ${MAIL_FROM:notificaciones@vidasalud.cl}
+    dominio-destinatario: vidasalud.cl
