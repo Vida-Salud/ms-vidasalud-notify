@@ -2,6 +2,8 @@ server:
   port: 8092
 
 spring:
+  config:
+    import: optional:file:.env[.properties]   # solo para correr desde el IDE
   application:
     name: ms-vidasalud-notify
   rabbitmq:
@@ -9,7 +11,7 @@ spring:
     # el cliente se reconecta al siguiente de la lista.
     addresses: ${RABBITMQ_ADDRESSES:localhost:5672,localhost:5673}
     username: ${RABBITMQ_USER:vidasalud}
-    password: ${RABBITMQ_PASS:admin123}
+    password: ${RABBITMQ_PASS}
     listener:
       simple:
         acknowledge-mode: manual

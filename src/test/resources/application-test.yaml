@@ -1,0 +1,6 @@
+spring:
+  rabbitmq:
+    password: solo-para-tests
+    listener:
+      simple:
+        auto-startup: false
