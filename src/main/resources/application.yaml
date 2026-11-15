@@ -42,3 +42,9 @@ notify:
 logging:
   pattern:
     correlation: "[%X{traceId:-}] "
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true   # /actuator/health/liveness y /actuator/health/readiness
