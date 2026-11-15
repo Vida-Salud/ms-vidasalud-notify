@@ -11,9 +11,9 @@ public class RecordService {
 
     private static final Logger log = LoggerFactory.getLogger(RecordService.class);
 
-    private final SimuladorFallas simuladorFallas;
+    private final InyectorFallas simuladorFallas;
 
-    public RecordService(SimuladorFallas simuladorFallas) {
+    public RecordService(InyectorFallas simuladorFallas) {
         this.simuladorFallas = simuladorFallas;
     }
 

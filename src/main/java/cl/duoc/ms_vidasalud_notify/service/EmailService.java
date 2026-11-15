@@ -41,11 +41,11 @@ public class EmailService {
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final String BOX_POR_DEFECTO = "recepción";
 
-    private final SimuladorFallas simuladorFallas;
+    private final InyectorFallas simuladorFallas;
     private final JavaMailSender mailSender;
     private final EmailProperties emailProperties;
 
-    public EmailService(SimuladorFallas simuladorFallas, JavaMailSender mailSender,
+    public EmailService(InyectorFallas simuladorFallas, JavaMailSender mailSender,
                         EmailProperties emailProperties) {
         this.simuladorFallas = simuladorFallas;
         this.mailSender = mailSender;

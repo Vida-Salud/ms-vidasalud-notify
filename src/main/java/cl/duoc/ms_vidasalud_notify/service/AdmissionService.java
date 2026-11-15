@@ -15,9 +15,9 @@ public class AdmissionService {
 
     private static final Logger log = LoggerFactory.getLogger(AdmissionService.class);
 
-    private final SimuladorFallas simuladorFallas;
+    private final InyectorFallas simuladorFallas;
 
-    public AdmissionService(SimuladorFallas simuladorFallas) {
+    public AdmissionService(InyectorFallas simuladorFallas) {
         this.simuladorFallas = simuladorFallas;
     }
 
