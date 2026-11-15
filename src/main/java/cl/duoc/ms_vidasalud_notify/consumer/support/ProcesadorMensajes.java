@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.amqp.core.Message;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -71,11 +72,23 @@ public class ProcesadorMensajes {
      */
     public void procesar(Message message, Channel channel, String cola,
                          Consumer<MensajeComando> accion) throws IOException {
+        try {
+            procesarMensaje(message, channel, cola, accion);
+        } finally {
+            MDC.remove("traceId");
+        }
+    }
+
+    private void procesarMensaje(Message message, Channel channel, String cola,
+                                 Consumer<MensajeComando> accion) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
 
         MensajeComando mensaje = null;
         try {
             mensaje = leer(message);
+            if (mensaje != null && mensaje.traceId() != null) {
+                MDC.put("traceId", mensaje.traceId());
+            }
             validar(mensaje);
         } catch (ErrorPermanenteException e) {
             String eventId = mensaje != null && !vacio(mensaje.eventId()) ? mensaje.eventId() : EVENT_ID_DESCONOCIDO;
@@ -132,6 +145,9 @@ public class ProcesadorMensajes {
     private static void validar(MensajeComando mensaje) {
         if (mensaje == null) {
             throw new ErrorPermanenteException("Mensaje vacío");
+        }
+        if (mensaje.version() != null && mensaje.version() != 1) {
+            throw new ErrorPermanenteException("Versión de envelope no soportada: " + mensaje.version());
         }
         if (vacio(mensaje.eventId())) {
             throw new ErrorPermanenteException("Falta eventId");

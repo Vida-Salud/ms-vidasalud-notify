@@ -71,6 +71,6 @@ class EmailServiceTest {
     private static MensajeComando mensaje(String type, String paciente) {
         DatosAtencion data = new DatosAtencion(1L, paciente, "Medicina General", "B3",
                 LocalDateTime.of(2026, 10, 20, 9, 30), "AGENDADA");
-        return new MensajeComando("evt-1", type, Instant.now(), "corr-1", data);
+        return new MensajeComando(1, "evt-1", type, Instant.now(), "corr-1", "trace-1", data);
     }
 }
