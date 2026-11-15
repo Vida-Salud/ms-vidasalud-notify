@@ -43,7 +43,7 @@ import org.springframework.context.annotation.Configuration;
  * <p>
  * <b>Colas principales</b> (durables), con los argumentos:
  * <ul>
- *   <li>{@code x-message-ttl} = 30 s ({@link #QUEUE_TTL_MS}): un mensaje que espera más que eso en la cola expira y va al DLX.</li>
+ *   <li>{@code x-message-ttl} = 10 min ({@link #QUEUE_TTL_MS}): un mensaje que espera más que eso en la cola expira y va al DLX.</li>
  *   <li>{@code x-max-length} = 1000 ({@link #QUEUE_MAX_LENGTH}): al superarlo, el mensaje más antiguo sale de la cola y va al DLX.</li>
  *   <li>{@code x-dead-letter-exchange} = {@code cmd.dead.dlx}: destino de los mensajes rechazados con NACK sin
  *       requeue, expirados o desbordados.</li>
@@ -81,7 +81,7 @@ public class RabbitMQConfig {
     public static final String ADMISSION_DEAD_ROUTING_KEY = "admission.dead";
     public static final String RECORD_DEAD_ROUTING_KEY = "record.dead";
 
-    public static final int QUEUE_TTL_MS = 30_000;
+    public static final int QUEUE_TTL_MS = 600_000;
     public static final int DLQ_TTL_MS = 86_400_000;
     public static final int QUEUE_MAX_LENGTH = 1_000;
 
