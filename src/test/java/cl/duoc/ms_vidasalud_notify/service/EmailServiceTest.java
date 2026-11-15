@@ -8,7 +8,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import cl.duoc.ms_vidasalud_notify.config.EmailProperties;
-import cl.duoc.ms_vidasalud_notify.config.SimulacionProperties;
 import cl.duoc.ms_vidasalud_notify.config.TiposMensaje;
 import cl.duoc.ms_vidasalud_notify.dto.DatosAtencion;
 import cl.duoc.ms_vidasalud_notify.dto.MensajeComando;
@@ -31,7 +30,7 @@ class EmailServiceTest {
     void setUp() {
         mailSender = mock(JavaMailSender.class);
         emailService = new EmailService(
-                new SimuladorFallas(new SimulacionProperties(false)),
+                (data, sistema) -> { },
                 mailSender,
                 new EmailProperties("notificaciones@vidasalud.cl", "vidasalud.cl"));
     }
