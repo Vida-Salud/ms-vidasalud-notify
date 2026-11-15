@@ -34,7 +34,11 @@ notify:
   idempotencia:
     max-registros: 10000
   simulacion:
-    habilitada: ${NOTIFY_SIMULACION:true}
+    habilitada: false
   email:
     remitente: ${MAIL_FROM:notificaciones@vidasalud.cl}
     dominio-destinatario: vidasalud.cl
+
+logging:
+  pattern:
+    correlation: "[%X{traceId:-}] "
